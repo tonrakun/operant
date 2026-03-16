@@ -1,3 +1,65 @@
+# ===========================
+# Operant .gitignore
+# ===========================
+
+# --- 個人設定・機密情報 ---
+config.yaml
+OPERANT.md
+
+# --- ログ ---
+logs/
+*.log
+
+# --- 保存チャット ---
+chats/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+wheels/
+pip-wheel-metadata/
+*.so
+
+# --- 仮想環境 ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- IDE ---
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstash
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- テスト・カバレッジ ---
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# --- 一時ファイル ---
+*.tmp
+*.bak
+*.swp
+*~
+
 # AI
 /.serena
 CLAUDE.md

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operant</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <span class="app-title">Operant</span>
+      <span id="statusBadge" class="status-badge status-idle">Idle</span>
+    </div>
+    <div class="header-right">
+      <button id="stopBtn" class="stop-btn">Emergency Stop</button>
+      <button id="logoutBtn" class="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- 左ペイン: LIVEスクリーンショット -->
+    <section class="pane pane-screenshot">
+      <div class="screenshot-wrapper" id="screenshotWrapper">
+        <span class="live-badge" id="liveBadge" hidden>LIVE</span>
+        <img
+          id="screenshotImg"
+          class="screenshot-img"
+          alt="Screenshot"
+          title="Click to expand"
+        >
+        <p id="noScreenshot" class="no-screenshot">No screenshot yet</p>
+      </div>
+
+      <!-- 拡大モーダル -->
+      <div id="screenshotModal" class="modal">
+        <div class="modal-backdrop" id="modalBackdrop"></div>
+        <img id="modalImg" class="modal-img" alt="Screenshot (expanded)">
+      </div>
+    </section>
+
+    <!-- 右ペイン: チャット -->
+    <section class="pane pane-chat">
+      <div class="chat-header">
+        <span id="chatHeaderTitle" class="chat-header-title">Chat</span>
+        <div class="chat-header-actions">
+          <button id="saveChatBtn" class="chat-action-btn">Save</button>
+          <button id="savedChatsBtn" class="chat-action-btn">Saved Chats</button>
+          <button id="clearHistoryBtn" class="clear-history-btn">Clear</button>
+        </div>
+      </div>
+      <div id="chatMessages" class="chat-messages"></div>
+      <div class="chat-input-area">
+        <textarea
+          id="taskInput"
+          class="task-input"
+          placeholder="Enter your task..."
+          rows="3"
+        ></textarea>
+        <button id="sendBtn" class="send-btn">Send</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- 保存チャットモーダル -->
+  <div id="savedChatsModal" class="modal">
+    <div class="modal-backdrop" id="savedChatsBackdrop"></div>
+    <div class="saved-chats-panel">
+      <div class="saved-chats-header">
+        <span id="savedChatsPanelTitle" class="saved-chats-title">Saved Chats</span>
+        <button id="closeSavedChatsBtn" class="saved-chats-close-btn">✕</button>
+      </div>
+      <div id="savedChatsList" class="saved-chats-list"></div>
+    </div>
+  </div>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

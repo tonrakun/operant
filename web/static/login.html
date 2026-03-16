@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operant Login</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="login-body">
+  <div class="login-container">
+    <h1 class="login-title">Operant</h1>
+    <form id="loginForm" class="login-form">
+      <input
+        type="password"
+        id="passwordInput"
+        class="login-input"
+        placeholder="Password"
+        autocomplete="current-password"
+        autofocus
+      >
+      <button type="submit" class="login-btn" id="loginBtn">Login</button>
+      <p id="loginError" class="login-error" hidden></p>
+    </form>
+  </div>
+
+  <script>
+    // i18n
+    fetch('/api/i18n').then(r => r.json()).then(t => {
+      const w = t.web || {};
+      document.title = w.login_title || 'Operant Login';
+      document.querySelector('h1').textContent = w.panel_title || 'Operant';
+      document.getElementById('passwordInput').placeholder = w.login_placeholder || 'Enter password';
+      document.getElementById('loginBtn').textContent = w.login_button || 'Login';
+    }).catch(() => {});
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pw = document.getElementById('passwordInput').value;
+      const btn = document.getElementById('loginBtn');
+      const err = document.getElementById('loginError');
+      btn.disabled = true;
+      err.hidden = true;
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({password: pw}),
+        });
+        if (res.ok) {
+          window.location.href = '/';
+        } else {
+          const t = await fetch('/api/i18n').then(r => r.json()).catch(() => ({}));
+          err.textContent = (t.web || {}).login_error || 'Invalid password';
+          err.hidden = false;
+          document.getElementById('passwordInput').value = '';
+          document.getElementById('passwordInput').focus();
+        }
+      } catch (ex) {
+        err.textContent = 'Network error';
+        err.hidden = false;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
