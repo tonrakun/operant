@@ -277,7 +277,7 @@ language: ja
 # LLM設定
 llm:
   provider: claude          # claude / openai / azure_openai / gemini
-  model: claude-opus-4-6    # 使用するモデル名
+  model: claude-sonnet-4-6    # 使用するモデル名
   max_tokens: 256           # 1ターンあたりの最大出力トークン数
 
 # APIキー（環境変数参照または直接記載）
@@ -379,7 +379,7 @@ python main.py
 
 | プロバイダー | モデル例 | 学習利用 | 備考 |
 |------------|---------|---------|------|
-| **Anthropic Claude** | claude-opus-4-6 | デフォルト対象外 | **第一推奨** |
+| **Anthropic Claude** | claude-sonnet-4-6 | デフォルト対象外 | **第一推奨** |
 | OpenAI GPT-4o | gpt-4o | opt-out 設定推奨 | 第二推奨 |
 | Azure OpenAI | gpt-4o | エンタープライズ契約で保護 | 企業向け推奨 |
 | Google Gemini | gemini-2.0-flash | DPA 締結で保護 | 第三推奨 |
