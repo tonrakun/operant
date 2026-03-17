@@ -91,11 +91,26 @@ def _test_gemini(api_key: str) -> None:
     )
 
 
+def _test_ollama(base_url: str, model: str) -> None:
+    import openai
+    client = openai.OpenAI(
+        api_key="ollama",
+        base_url=f"{base_url}/v1",
+    )
+    client.chat.completions.create(
+        model=model,
+        max_tokens=1,
+        messages=[{"role": "user", "content": "hi"}],
+    )
+
+
 def _run_connection_test(
     provider: str,
     api_key: str,
     azure_endpoint: str = "",
     azure_deployment: str = "",
+    ollama_base_url: str = "",
+    ollama_model: str = "",
 ) -> None:
     if provider == "claude":
         _test_anthropic(api_key)
@@ -105,6 +120,8 @@ def _run_connection_test(
         _test_azure(api_key, azure_endpoint, azure_deployment)
     elif provider == "gemini":
         _test_gemini(api_key)
+    elif provider == "ollama":
+        _test_ollama(ollama_base_url, ollama_model)
 
 
 # ---------------------------------------------------------------------------
@@ -177,6 +194,8 @@ def _generate_config(
     password_hash: str,
     azure_endpoint: str = "",
     azure_deployment: str = "",
+    ollama_base_url: str = "",
+    ollama_model: str = "",
 ) -> dict[str, Any]:
     # モデルのデフォルト
     model_defaults = {
@@ -184,6 +203,7 @@ def _generate_config(
         "openai": "gpt-4o",
         "azure_openai": azure_deployment or "gpt-4o",
         "gemini": "gemini-2.0-flash",
+        "ollama": ollama_model or "llava",
     }
 
     config: dict[str, Any] = {
@@ -234,6 +254,8 @@ def _generate_config(
             config["llm"]["azure_deployment"] = azure_deployment
     elif provider == "gemini":
         config["api_keys"]["gemini"] = api_key
+    elif provider == "ollama":
+        config["llm"]["ollama_base_url"] = ollama_base_url or "http://localhost:11434"
 
     return config
 
@@ -253,17 +275,30 @@ def run_setup() -> None:
     print(_t(ja, "setup.select_language"))
     print(_t(ja, "setup.lang_option_ja"))
     print(_t(ja, "setup.lang_option_en"))
+    print("  [3] 中文（简体）")
+    print("  [4] 한국어")
     lang_input = input(_t(ja, "setup.lang_prompt")).strip()
 
     if lang_input == "2":
         lang = "en"
     elif lang_input == "1":
         lang = "ja"
+    elif lang_input == "3":
+        lang = "zh"
+    elif lang_input == "4":
+        lang = "ko"
     else:
         # OSロケールを使う
         try:
             loc = locale.getdefaultlocale()[0] or ""
-            lang = "ja" if loc.startswith("ja") else "en"
+            if loc.startswith("ja"):
+                lang = "ja"
+            elif loc.startswith("zh"):
+                lang = "zh"
+            elif loc.startswith("ko"):
+                lang = "ko"
+            else:
+                lang = "en"
         except Exception:
             lang = "en"
 
@@ -279,38 +314,71 @@ def run_setup() -> None:
     print(p("setup.provider_openai"))
     print(p("setup.provider_azure"))
     print(p("setup.provider_gemini"))
+    # Ollama オプション（i18n キーがない言語ではフォールバック）
+    ollama_label = _t(t, "setup.provider_ollama")
+    if ollama_label == "setup.provider_ollama":
+        ollama_label = "[5] Ollama (Local LLM)"
+    print(ollama_label)
 
-    provider_map = {"1": "claude", "2": "openai", "3": "azure_openai", "4": "gemini"}
+    provider_map = {"1": "claude", "2": "openai", "3": "azure_openai", "4": "gemini", "5": "ollama"}
     while True:
         prov_input = input(p("setup.provider_prompt")).strip()
         if prov_input in provider_map:
             provider = provider_map[prov_input]
             break
-        print("  Invalid choice. Please enter 1-4.")
+        print("  Invalid choice. Please enter 1-5.")
 
-    # [2/5] APIキー & Azure固有設定
+    # [2/5] APIキー & プロバイダー固有設定
     print()
-    print(p("setup.step_apikey"))
     azure_endpoint = ""
     azure_deployment = ""
+    ollama_base_url = ""
+    ollama_model = ""
+    api_key = ""
 
-    if provider == "azure_openai":
-        azure_endpoint = input(p("setup.azure_endpoint_prompt")).strip()
-        azure_deployment = input(p("setup.azure_deployment_prompt")).strip()
+    if provider == "ollama":
+        # Ollama は API キー不要
+        base_url_prompt = _t(t, "setup.ollama_base_url_prompt")
+        if base_url_prompt == "setup.ollama_base_url_prompt":
+            base_url_prompt = "Ollama base URL (default: http://localhost:11434): "
+        model_prompt = _t(t, "setup.ollama_model_prompt")
+        if model_prompt == "setup.ollama_model_prompt":
+            model_prompt = "Model name (default: llava): "
+        ollama_base_url = input(base_url_prompt).strip() or "http://localhost:11434"
+        ollama_model = input(model_prompt).strip() or "llava"
+        while True:
+            # [3/5] 接続テスト
+            print()
+            print(p("setup.step_test"))
+            try:
+                _run_connection_test(provider, api_key, ollama_base_url=ollama_base_url, ollama_model=ollama_model)
+                print(p("setup.test_ok"))
+                break
+            except Exception as exc:
+                print(p("setup.test_fail", error=str(exc)))
+                retry = input("Retry? [y/N]: ").strip().lower()
+                if retry != "y":
+                    break
+    else:
+        print(p("setup.step_apikey"))
 
-    while True:
-        api_key = getpass.getpass(p("setup.apikey_prompt"))
+        if provider == "azure_openai":
+            azure_endpoint = input(p("setup.azure_endpoint_prompt")).strip()
+            azure_deployment = input(p("setup.azure_deployment_prompt")).strip()
 
-        # [3/5] 接続テスト
-        print()
-        print(p("setup.step_test"))
-        try:
-            _run_connection_test(provider, api_key, azure_endpoint, azure_deployment)
-            print(p("setup.test_ok"))
-            break
-        except Exception as exc:
-            print(p("setup.test_fail", error=str(exc)))
-            print(p("setup.test_retry"))
+        while True:
+            api_key = getpass.getpass(p("setup.apikey_prompt"))
+
+            # [3/5] 接続テスト
+            print()
+            print(p("setup.step_test"))
+            try:
+                _run_connection_test(provider, api_key, azure_endpoint, azure_deployment)
+                print(p("setup.test_ok"))
+                break
+            except Exception as exc:
+                print(p("setup.test_fail", error=str(exc)))
+                print(p("setup.test_retry"))
 
     # [4/5] パスワード設定
     print()
@@ -336,6 +404,8 @@ def run_setup() -> None:
         password_hash=password_hash,
         azure_endpoint=azure_endpoint,
         azure_deployment=azure_deployment,
+        ollama_base_url=ollama_base_url,
+        ollama_model=ollama_model,
     )
     config_path = Path(__file__).parent / "config.yaml"
     with open(config_path, "w", encoding="utf-8") as f:

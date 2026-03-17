@@ -11,6 +11,8 @@
 let ws = null;
 let isRunning = false;
 let i18n = {};
+let _stepCount = 0;          // 現在タスクの思考ターン数
+let _lastScreenshotData = null; // ダウンロード用
 
 // ---------------------------------------------------------------------------
 // カスタムダイアログ
@@ -86,6 +88,11 @@ function applyI18n() {
   document.getElementById('saveChatBtn').textContent = t('web.save_chat') || 'Save';
   document.getElementById('savedChatsBtn').textContent = t('web.saved_chats') || 'Saved Chats';
   document.getElementById('savedChatsPanelTitle').textContent = t('web.saved_chats') || 'Saved Chats';
+  document.getElementById('editRulesBtn').textContent = t('web.edit_rules') || 'Edit Rules';
+  document.getElementById('editRulesPanelTitle').textContent = t('web.edit_rules_title') || 'Edit OPERANT.md';
+  document.getElementById('saveRulesBtn').textContent = t('web.edit_rules_save') || 'Save';
+  document.getElementById('editRulesTextarea').placeholder = t('web.edit_rules_placeholder') || 'Enter agent rules...';
+  document.getElementById('downloadScreenshotBtn').title = t('web.download_screenshot') || 'Download screenshot';
   updateStatusBadge(isRunning);
 }
 
@@ -95,14 +102,23 @@ function applyI18n() {
 let _wsRetryDelay = 2000;
 const _wsRetryMax = 30000;
 
+function setWsDot(state) {
+  const dot = document.getElementById('wsStatusDot');
+  dot.className = `ws-dot ws-dot--${state}`;
+  const labels = { connected: t('web.ws_connected') || 'Connected', disconnected: t('web.ws_disconnected') || 'Disconnected', connecting: t('web.ws_connecting') || 'Connecting...' };
+  dot.title = labels[state] || state;
+}
+
 function connectWS() {
+  setWsDot('connecting');
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
   const url = `${protocol}://${location.host}/ws`;
   ws = new WebSocket(url);
 
   ws.onopen = () => {
     console.log('WebSocket connected');
-    _wsRetryDelay = 2000; // 接続成功したらリトライ間隔をリセット
+    setWsDot('connected');
+    _wsRetryDelay = 2000;
   };
 
   ws.onmessage = (event) => {
@@ -115,17 +131,18 @@ function connectWS() {
   };
 
   ws.onclose = (event) => {
-    // 認証エラー (4401) は再接続しない → ログインページへ
+    setWsDot('disconnected');
     if (event.code === 4401) {
       window.location.href = '/login';
       return;
     }
     console.warn(`WebSocket closed (${event.code}), reconnecting in ${_wsRetryDelay}ms...`);
     setTimeout(connectWS, _wsRetryDelay);
-    _wsRetryDelay = Math.min(_wsRetryDelay * 2, _wsRetryMax); // 指数バックオフ
+    _wsRetryDelay = Math.min(_wsRetryDelay * 2, _wsRetryMax);
   };
 
   ws.onerror = (e) => {
+    setWsDot('disconnected');
     console.error('WebSocket error', e);
   };
 }
@@ -137,15 +154,61 @@ function sendWS(msg) {
 }
 
 // ---------------------------------------------------------------------------
+// 生成中インジケーター
+// ---------------------------------------------------------------------------
+let _thinkingEl = null;
+
+function showThinkingIndicator() {
+  if (_thinkingEl) return;
+  const chatEl = document.getElementById('chatMessages');
+  _thinkingEl = document.createElement('div');
+  _thinkingEl.className = 'chat-msg chat-msg--thinking';
+  _thinkingEl.innerHTML = `
+    <span class="thinking-label">${t('web.generating') || 'Generating...'}</span>
+    <span class="thinking-dots"><span></span><span></span><span></span></span>
+  `;
+  chatEl.appendChild(_thinkingEl);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function hideThinkingIndicator() {
+  if (_thinkingEl) {
+    _thinkingEl.remove();
+    _thinkingEl = null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ステップカウンター
+// ---------------------------------------------------------------------------
+function resetStepCounter() {
+  _stepCount = 0;
+  const el = document.getElementById('stepCounter');
+  el.hidden = true;
+}
+
+function incrementStep() {
+  _stepCount++;
+  const el = document.getElementById('stepCounter');
+  const label = t('web.step_count') || 'Step';
+  el.textContent = `${label} ${_stepCount}`;
+  el.hidden = false;
+}
+
+// ---------------------------------------------------------------------------
 // メッセージハンドラー
 // ---------------------------------------------------------------------------
 function handleMessage(msg) {
   switch (msg.type) {
     case 'think':
+      hideThinkingIndicator();
+      incrementStep();
       appendChat('think', msg.content);
+      if (isRunning) showThinkingIndicator();
       break;
 
     case 'done':
+      hideThinkingIndicator();
       appendChat('done', msg.content);
       break;
 
@@ -154,11 +217,12 @@ function handleMessage(msg) {
       break;
 
     case 'log':
-      // ACTやデバッグログはチャットに表示しない（コンソールのみ）
-      console.log('[LOG]', msg.content);
+      // アクションログをチャットに薄く表示
+      appendLog(msg.content);
       break;
 
     case 'error':
+      hideThinkingIndicator();
       appendChat('error', msg.content);
       break;
 
@@ -167,6 +231,12 @@ function handleMessage(msg) {
       updateStatusBadge(isRunning);
       updateLiveBadge(isRunning);
       updateInputState();
+      if (isRunning) {
+        showThinkingIndicator();
+      } else {
+        hideThinkingIndicator();
+        resetStepCounter();
+      }
       break;
 
     default:
@@ -177,6 +247,11 @@ function handleMessage(msg) {
 // ---------------------------------------------------------------------------
 // チャット表示
 // ---------------------------------------------------------------------------
+function _formatTimestamp() {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+}
+
 function appendChat(type, content) {
   const chatEl = document.getElementById('chatMessages');
   const el = document.createElement('div');
@@ -190,6 +265,10 @@ function appendChat(type, content) {
     case 'error': prefix = t('web.error_prefix') || 'Error: ';   break;
   }
 
+  // メインボディ
+  const body = document.createElement('div');
+  body.className = 'chat-msg-body';
+
   const prefixEl = document.createElement('span');
   prefixEl.className = 'chat-prefix';
   prefixEl.textContent = prefix;
@@ -198,11 +277,62 @@ function appendChat(type, content) {
   contentEl.className = 'chat-content';
   contentEl.textContent = content;
 
-  el.appendChild(prefixEl);
-  el.appendChild(contentEl);
+  body.appendChild(prefixEl);
+  body.appendChild(contentEl);
+
+  // メタ行（タイムスタンプ + コピーボタン）
+  const meta = document.createElement('div');
+  meta.className = 'chat-msg-meta';
+
+  const ts = document.createElement('span');
+  ts.className = 'chat-timestamp';
+  ts.textContent = _formatTimestamp();
+
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'chat-copy-btn';
+  copyBtn.title = t('web.copy') || 'Copy';
+  copyBtn.textContent = t('web.copy') || 'Copy';
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      copyBtn.textContent = t('web.copied') || 'Copied!';
+      setTimeout(() => { copyBtn.textContent = t('web.copy') || 'Copy'; }, 1500);
+    } catch (e) {}
+  });
+
+  meta.appendChild(ts);
+  meta.appendChild(copyBtn);
+
+  el.appendChild(body);
+  el.appendChild(meta);
   chatEl.appendChild(el);
 
   // 最新メッセージにスクロール
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function appendLog(content) {
+  // アクションログは小さく・薄く表示（折りたたみ可）
+  const chatEl = document.getElementById('chatMessages');
+  const el = document.createElement('div');
+  el.className = 'chat-msg chat-msg--log';
+
+  const icon = document.createElement('span');
+  icon.className = 'log-icon';
+  icon.textContent = '▶';
+
+  const text = document.createElement('span');
+  text.className = 'log-content';
+  text.textContent = content;
+
+  const ts = document.createElement('span');
+  ts.className = 'log-timestamp';
+  ts.textContent = _formatTimestamp();
+
+  el.appendChild(icon);
+  el.appendChild(text);
+  el.appendChild(ts);
+  chatEl.appendChild(el);
   chatEl.scrollTop = chatEl.scrollHeight;
 }
 
@@ -214,19 +344,40 @@ function appendUserMessage(text) {
 // スクリーンショット更新
 // ---------------------------------------------------------------------------
 function updateScreenshot(base64Data) {
+  _lastScreenshotData = base64Data;
   const img = document.getElementById('screenshotImg');
   const noSc = document.getElementById('noScreenshot');
   const modal = document.getElementById('screenshotModal');
   const modalImg = document.getElementById('modalImg');
+  const toolbar = document.getElementById('screenshotToolbar');
+  const ts = document.getElementById('screenshotTimestamp');
 
   const src = `data:image/webp;base64,${base64Data}`;
   img.src = src;
   img.classList.add('has-image');
   noSc.hidden = true;
+  toolbar.hidden = false;
+
+  // タイムスタンプ更新
+  const now = new Date();
+  ts.textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
 
   if (modal.classList.contains('is-visible')) {
     modalImg.src = src;
   }
+}
+
+// ---------------------------------------------------------------------------
+// スクリーンショットダウンロード
+// ---------------------------------------------------------------------------
+function downloadScreenshot() {
+  if (!_lastScreenshotData) return;
+  const a = document.createElement('a');
+  a.href = `data:image/webp;base64,${_lastScreenshotData}`;
+  const now = new Date();
+  const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+  a.download = `operant_${ts}.webp`;
+  a.click();
 }
 
 // ---------------------------------------------------------------------------
@@ -262,6 +413,7 @@ function sendTask() {
   const text = input.value.trim();
   if (!text || isRunning) return;
 
+  resetStepCounter();
   appendUserMessage(text);
   sendWS({type: 'task', content: text});
   input.value = '';
@@ -288,6 +440,7 @@ async function clearHistory() {
   try {
     await fetch('/api/history/clear', {method: 'POST'});
     document.getElementById('chatMessages').innerHTML = '';
+    resetStepCounter();
   } catch (e) {
     console.error('Failed to clear history', e);
   }
@@ -410,6 +563,45 @@ async function deleteSavedChat(chatId) {
 }
 
 // ---------------------------------------------------------------------------
+// OPERANT.md 編集
+// ---------------------------------------------------------------------------
+async function openEditRules() {
+  const modal = document.getElementById('editRulesModal');
+  modal.classList.add('is-visible');
+  try {
+    const res = await fetch('/api/operant');
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('editRulesTextarea').value = data.content || '';
+  } catch (e) {
+    console.error('Failed to load OPERANT.md', e);
+  }
+}
+
+function closeEditRules() {
+  document.getElementById('editRulesModal').classList.remove('is-visible');
+}
+
+async function saveRules() {
+  const content = document.getElementById('editRulesTextarea').value;
+  try {
+    const res = await fetch('/api/operant', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({content}),
+    });
+    if (!res.ok) {
+      await showAlert('Failed to save OPERANT.md');
+      return;
+    }
+    await showAlert(t('web.edit_rules_saved') || 'OPERANT.md saved');
+    closeEditRules();
+  } catch (e) {
+    console.error('Failed to save OPERANT.md', e);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 緊急停止
 // ---------------------------------------------------------------------------
 async function emergencyStop() {
@@ -458,7 +650,6 @@ function setupScreenshotModal() {
 document.getElementById('sendBtn').addEventListener('click', sendTask);
 
 document.getElementById('taskInput').addEventListener('keydown', (e) => {
-  // Ctrl+Enter で送信
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
     sendTask();
@@ -472,6 +663,11 @@ document.getElementById('saveChatBtn').addEventListener('click', saveCurrentChat
 document.getElementById('savedChatsBtn').addEventListener('click', openSavedChats);
 document.getElementById('closeSavedChatsBtn').addEventListener('click', closeSavedChats);
 document.getElementById('savedChatsBackdrop').addEventListener('click', closeSavedChats);
+document.getElementById('editRulesBtn').addEventListener('click', openEditRules);
+document.getElementById('closeEditRulesBtn').addEventListener('click', closeEditRules);
+document.getElementById('editRulesBackdrop').addEventListener('click', closeEditRules);
+document.getElementById('saveRulesBtn').addEventListener('click', saveRules);
+document.getElementById('downloadScreenshotBtn').addEventListener('click', downloadScreenshot);
 
 // ダイアログ
 document.getElementById('dialogOkBtn').addEventListener('click',     () => _closeDialog(true));
@@ -490,7 +686,6 @@ document.addEventListener('keydown', (e) => {
   await loadI18n();
   setupScreenshotModal();
 
-  // 現在の実行状態を取得
   try {
     const res = await fetch('/api/status');
     const data = await res.json();
@@ -498,14 +693,12 @@ document.addEventListener('keydown', (e) => {
     updateStatusBadge(isRunning);
     updateLiveBadge(isRunning);
     updateInputState();
+    if (isRunning) showThinkingIndicator();
   } catch (e) {}
 
-  // チャット履歴を復元
   await loadHistory();
 })();
 
-// WebSocket接続はページの load イベント後に開始
-// → ブラウザの読み込みバーが完了してから接続するのでローディング表示がハングしない
 window.addEventListener('load', () => {
   connectWS();
 });

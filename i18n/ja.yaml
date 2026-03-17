@@ -70,6 +70,20 @@ web:
   messages_count: "件"
   dialog_ok: "OK"
   dialog_cancel: "キャンセル"
+  edit_rules: "ルール編集"
+  edit_rules_title: "OPERANT.md 編集"
+  edit_rules_save: "保存"
+  edit_rules_close: "閉じる"
+  edit_rules_saved: "OPERANT.md を保存しました"
+  edit_rules_placeholder: "エージェントのルールを入力..."
+  generating: "生成中..."
+  step_count: "ステップ"
+  copy: "コピー"
+  copied: "コピー済"
+  download_screenshot: "スクリーンショットをダウンロード"
+  ws_connected: "接続中"
+  ws_connecting: "接続中..."
+  ws_disconnected: "切断"
 
 # --- エラーメッセージ ---
 errors:

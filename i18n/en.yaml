@@ -70,6 +70,20 @@ web:
   messages_count: " messages"
   dialog_ok: "OK"
   dialog_cancel: "Cancel"
+  edit_rules: "Edit Rules"
+  edit_rules_title: "Edit OPERANT.md"
+  edit_rules_save: "Save"
+  edit_rules_close: "Close"
+  edit_rules_saved: "OPERANT.md saved"
+  edit_rules_placeholder: "Enter agent rules..."
+  generating: "Generating..."
+  step_count: "Step"
+  copy: "Copy"
+  copied: "Copied!"
+  download_screenshot: "Download screenshot"
+  ws_connected: "Connected"
+  ws_connecting: "Connecting..."
+  ws_disconnected: "Disconnected"
 
 # --- Error Messages ---
 errors:

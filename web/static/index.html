@@ -4,15 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Operant</title>
-  <link rel="stylesheet" href="/static/style.css?v=3">
+  <link rel="stylesheet" href="/static/style.css?v=5">
 </head>
 <body>
   <header class="app-header">
     <div class="header-left">
       <span class="app-title">Operant</span>
       <span id="statusBadge" class="status-badge status-idle">Idle</span>
+      <span id="stepCounter" class="step-counter" hidden></span>
     </div>
     <div class="header-right">
+      <span id="wsStatusDot" class="ws-dot ws-dot--connecting" title="Connecting..."></span>
+      <button id="editRulesBtn" class="edit-rules-btn">Edit Rules</button>
       <button id="stopBtn" class="stop-btn">Emergency Stop</button>
       <button id="logoutBtn" class="logout-btn">Logout</button>
     </div>
@@ -30,6 +33,10 @@
           title="Click to expand"
         >
         <p id="noScreenshot" class="no-screenshot">No screenshot yet</p>
+        <div class="screenshot-toolbar" id="screenshotToolbar" hidden>
+          <span id="screenshotTimestamp" class="screenshot-timestamp"></span>
+          <button id="downloadScreenshotBtn" class="screenshot-download-btn" title="Download">↓</button>
+        </div>
       </div>
 
       <!-- 拡大モーダル -->
@@ -86,6 +93,26 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=3" defer></script>
+  <!-- OPERANT.md 編集モーダル -->
+  <div id="editRulesModal" class="modal">
+    <div class="modal-backdrop" id="editRulesBackdrop"></div>
+    <div class="edit-rules-panel">
+      <div class="edit-rules-header">
+        <span id="editRulesPanelTitle" class="edit-rules-title">Edit OPERANT.md</span>
+        <button id="closeEditRulesBtn" class="saved-chats-close-btn">✕</button>
+      </div>
+      <textarea
+        id="editRulesTextarea"
+        class="edit-rules-textarea"
+        placeholder="Enter agent rules..."
+        spellcheck="false"
+      ></textarea>
+      <div class="edit-rules-actions">
+        <button id="saveRulesBtn" class="edit-rules-save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js?v=5" defer></script>
 </body>
 </html>

@@ -195,6 +195,32 @@ def create_app(config: dict[str, Any]) -> FastAPI:
         return JSONResponse({"ok": True})
 
     # ---------------------------------------------------------------------------
+    # OPERANT.md 編集 API
+    # ---------------------------------------------------------------------------
+
+    _OPERANT_PATH = Path(__file__).parent.parent / "OPERANT.md"
+
+    @app.get("/api/operant")
+    async def get_operant(session: str | None = Cookie(default=None)) -> JSONResponse:
+        if not _verify_session(session):
+            raise HTTPException(status_code=401)
+        content = _OPERANT_PATH.read_text(encoding="utf-8") if _OPERANT_PATH.exists() else ""
+        return JSONResponse({"content": content})
+
+    @app.post("/api/operant")
+    async def save_operant(
+        request: Request,
+        session: str | None = Cookie(default=None),
+    ) -> JSONResponse:
+        if not _verify_session(session):
+            raise HTTPException(status_code=401)
+        body = await request.json()
+        content: str = body.get("content", "")
+        _OPERANT_PATH.write_text(content, encoding="utf-8")
+        logger.info("OPERANT.md updated via web panel")
+        return JSONResponse({"ok": True})
+
+    # ---------------------------------------------------------------------------
     # 認証エンドポイント
     # ---------------------------------------------------------------------------
 

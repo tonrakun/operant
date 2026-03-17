@@ -152,5 +152,8 @@ def load_llm(config: dict[str, Any]) -> BaseLLM:
     elif provider == "gemini":
         from .gemini import GeminiLLM
         return GeminiLLM(config)
+    elif provider == "ollama":
+        from .ollama import OllamaLLM
+        return OllamaLLM(config)
     else:
         raise ValueError(f"Unsupported LLM provider: {provider}")
