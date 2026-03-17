@@ -68,6 +68,8 @@ web:
   no_saved_chats: "保存済みチャットはありません"
   chat_saved: "チャットを保存しました"
   messages_count: "件"
+  dialog_ok: "OK"
+  dialog_cancel: "キャンセル"
 
 # --- エラーメッセージ ---
 errors:

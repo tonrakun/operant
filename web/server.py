@@ -200,7 +200,10 @@ def create_app(config: dict[str, Any]) -> FastAPI:
 
     @app.get("/login")
     async def login_page() -> FileResponse:
-        return FileResponse(STATIC_DIR / "login.html")
+        return FileResponse(
+            STATIC_DIR / "login.html",
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+        )
 
     @app.post("/api/login")
     async def do_login(request: Request) -> JSONResponse:
@@ -239,7 +242,10 @@ def create_app(config: dict[str, Any]) -> FastAPI:
     async def index(session: str | None = Cookie(default=None)) -> FileResponse | RedirectResponse:
         if not _verify_session(session):
             return RedirectResponse("/login")
-        return FileResponse(STATIC_DIR / "index.html")
+        return FileResponse(
+            STATIC_DIR / "index.html",
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+        )
 
     # ---------------------------------------------------------------------------
     # エージェント API

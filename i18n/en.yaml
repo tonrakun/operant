@@ -68,6 +68,8 @@ web:
   no_saved_chats: "No saved chats"
   chat_saved: "Chat saved"
   messages_count: " messages"
+  dialog_ok: "OK"
+  dialog_cancel: "Cancel"
 
 # --- Error Messages ---
 errors:

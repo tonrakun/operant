@@ -13,6 +13,44 @@ let isRunning = false;
 let i18n = {};
 
 // ---------------------------------------------------------------------------
+// カスタムダイアログ
+// ---------------------------------------------------------------------------
+let _dialogResolve = null;
+
+function _closeDialog(result) {
+  document.getElementById('customDialog').classList.remove('is-visible');
+  if (_dialogResolve) {
+    _dialogResolve(result);
+    _dialogResolve = null;
+  }
+}
+
+function showDialog({ message, confirmMode = false }) {
+  const dialog    = document.getElementById('customDialog');
+  const msgEl     = document.getElementById('dialogMessage');
+  const okBtn     = document.getElementById('dialogOkBtn');
+  const cancelBtn = document.getElementById('dialogCancelBtn');
+
+  msgEl.textContent           = message;
+  okBtn.textContent           = t('web.dialog_ok')     || 'OK';
+  cancelBtn.textContent       = t('web.dialog_cancel') || 'Cancel';
+  cancelBtn.style.display     = confirmMode ? '' : 'none';
+
+  dialog.classList.add('is-visible');
+  okBtn.focus();
+
+  return new Promise(resolve => { _dialogResolve = resolve; });
+}
+
+function showAlert(message) {
+  return showDialog({ message, confirmMode: false });
+}
+
+function showConfirm(message) {
+  return showDialog({ message, confirmMode: true });
+}
+
+// ---------------------------------------------------------------------------
 // i18n 読み込み
 // ---------------------------------------------------------------------------
 async function loadI18n() {
@@ -246,7 +284,7 @@ async function loadHistory() {
 }
 
 async function clearHistory() {
-  if (!confirm(t('web.confirm_clear_history') || 'Clear chat history?')) return;
+  if (!await showConfirm(t('web.confirm_clear_history') || 'Clear chat history?')) return;
   try {
     await fetch('/api/history/clear', {method: 'POST'});
     document.getElementById('chatMessages').innerHTML = '';
@@ -267,11 +305,11 @@ async function saveCurrentChat() {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      alert(err.detail || 'Failed to save');
+      await showAlert(err.detail || 'Failed to save');
       return;
     }
     const data = await res.json();
-    alert(`${t('web.chat_saved') || 'Chat saved'}: ${data.title}`);
+    await showAlert(`${t('web.chat_saved') || 'Chat saved'}: ${data.title}`);
   } catch (e) {
     console.error('Failed to save chat', e);
   }
@@ -362,7 +400,7 @@ async function loadSavedChat(chatId) {
 }
 
 async function deleteSavedChat(chatId) {
-  if (!confirm(t('web.confirm_delete_chat') || 'Delete this chat?')) return;
+  if (!await showConfirm(t('web.confirm_delete_chat') || 'Delete this chat?')) return;
   try {
     await fetch(`/api/chats/${chatId}`, {method: 'DELETE'});
     await refreshSavedChatsList();
@@ -375,7 +413,7 @@ async function deleteSavedChat(chatId) {
 // 緊急停止
 // ---------------------------------------------------------------------------
 async function emergencyStop() {
-  if (!confirm(t('web.confirm_stop') || 'Emergency stop the agent?')) return;
+  if (!await showConfirm(t('web.confirm_stop') || 'Emergency stop the agent?')) return;
   sendWS({type: 'stop'});
   try {
     await fetch('/api/stop', {method: 'POST'});
@@ -434,6 +472,16 @@ document.getElementById('saveChatBtn').addEventListener('click', saveCurrentChat
 document.getElementById('savedChatsBtn').addEventListener('click', openSavedChats);
 document.getElementById('closeSavedChatsBtn').addEventListener('click', closeSavedChats);
 document.getElementById('savedChatsBackdrop').addEventListener('click', closeSavedChats);
+
+// ダイアログ
+document.getElementById('dialogOkBtn').addEventListener('click',     () => _closeDialog(true));
+document.getElementById('dialogCancelBtn').addEventListener('click', () => _closeDialog(false));
+document.getElementById('dialogBackdrop').addEventListener('click',  () => _closeDialog(false));
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('customDialog').classList.contains('is-visible')) return;
+  if (e.key === 'Enter')  { e.preventDefault(); _closeDialog(true);  }
+  if (e.key === 'Escape') { e.preventDefault(); _closeDialog(false); }
+});
 
 // ---------------------------------------------------------------------------
 // 初期化
