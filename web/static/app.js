@@ -14,6 +14,11 @@ let i18n = {};
 let _stepCount = 0;          // 現在タスクの思考ターン数
 let _lastScreenshotData = null; // ダウンロード用
 
+// セッションコスト
+let _sessionCostUsd = 0;
+let _sessionInputTokens = 0;
+let _sessionOutputTokens = 0;
+
 // ---------------------------------------------------------------------------
 // カスタムダイアログ
 // ---------------------------------------------------------------------------
@@ -78,21 +83,26 @@ function t(key) {
 function applyI18n() {
   document.title = t('web.panel_title') || 'Operant';
   document.querySelector('.app-title').textContent = t('web.panel_title') || 'Operant';
-  document.getElementById('stopBtn').textContent = t('web.stop_button') || 'Emergency Stop';
-  document.getElementById('sendBtn').textContent = t('web.send_button') || 'Send';
+  document.getElementById('editConfigBtn').title = t('web.edit_config') || 'Config';
+  document.getElementById('editRulesBtn').title = t('web.edit_rules') || 'Edit Rules';
+  document.getElementById('stopBtn').title = t('web.stop_button') || 'Emergency Stop';
+  document.getElementById('logoutBtn').title = t('web.logout') || 'Logout';
+  document.getElementById('sendBtn').title = t('web.send_button') || 'Send';
   document.getElementById('taskInput').placeholder = t('web.chat_placeholder') || 'Enter your task...';
   document.getElementById('noScreenshot').textContent = t('web.no_screenshot') || 'No screenshot yet';
   document.getElementById('screenshotImg').title = t('web.click_to_expand') || 'Click to expand';
   document.getElementById('chatHeaderTitle').textContent = t('web.chat_title') || 'Chat';
-  document.getElementById('clearHistoryBtn').textContent = t('web.clear_history') || 'Clear';
-  document.getElementById('saveChatBtn').textContent = t('web.save_chat') || 'Save';
-  document.getElementById('savedChatsBtn').textContent = t('web.saved_chats') || 'Saved Chats';
+  document.getElementById('clearHistoryBtn').title = t('web.clear_history') || 'Clear';
+  document.getElementById('saveChatBtn').title = t('web.save_chat') || 'Save';
+  document.getElementById('savedChatsBtn').title = t('web.saved_chats') || 'Saved Chats';
   document.getElementById('savedChatsPanelTitle').textContent = t('web.saved_chats') || 'Saved Chats';
-  document.getElementById('editRulesBtn').textContent = t('web.edit_rules') || 'Edit Rules';
   document.getElementById('editRulesPanelTitle').textContent = t('web.edit_rules_title') || 'Edit OPERANT.md';
   document.getElementById('saveRulesBtn').textContent = t('web.edit_rules_save') || 'Save';
   document.getElementById('editRulesTextarea').placeholder = t('web.edit_rules_placeholder') || 'Enter agent rules...';
   document.getElementById('downloadScreenshotBtn').title = t('web.download_screenshot') || 'Download screenshot';
+  document.getElementById('editConfigPanelTitle').textContent = t('web.edit_config_title') || 'Config';
+  document.getElementById('saveConfigBtn').textContent = t('web.edit_config_save') || 'Save';
+  document.getElementById('costBarLabel').textContent = t('web.cost_label') || 'Cost';
   updateStatusBadge(isRunning);
 }
 
@@ -226,6 +236,16 @@ function handleMessage(msg) {
       appendChat('error', msg.content);
       break;
 
+    case 'reply':
+      hideThinkingIndicator();
+      appendChat('reply', msg.content);
+      if (isRunning) showThinkingIndicator();
+      break;
+
+    case 'cost':
+      updateCostDisplay(msg);
+      break;
+
     case 'status':
       isRunning = msg.running;
       updateStatusBadge(isRunning);
@@ -260,6 +280,7 @@ function appendChat(type, content) {
   let prefix = '';
   switch (type) {
     case 'think': prefix = t('web.think_prefix') || 'Thinking: '; break;
+    case 'reply': prefix = t('web.reply_prefix') || ''; break;
     case 'done':  prefix = t('web.done_prefix')  || 'Done: ';    break;
     case 'user':  prefix = t('web.user_prefix')  || 'You: ';     break;
     case 'error': prefix = t('web.error_prefix') || 'Error: ';   break;
@@ -441,6 +462,7 @@ async function clearHistory() {
     await fetch('/api/history/clear', {method: 'POST'});
     document.getElementById('chatMessages').innerHTML = '';
     resetStepCounter();
+    resetCostDisplay();
   } catch (e) {
     console.error('Failed to clear history', e);
   }
@@ -563,6 +585,193 @@ async function deleteSavedChat(chatId) {
 }
 
 // ---------------------------------------------------------------------------
+// コスト表示
+// ---------------------------------------------------------------------------
+function updateCostDisplay(msg) {
+  _sessionCostUsd = msg.session_cost_usd || 0;
+  _sessionInputTokens = msg.session_input_tokens || 0;
+  _sessionOutputTokens = msg.session_output_tokens || 0;
+
+  const bar = document.getElementById('costBar');
+  const valEl = document.getElementById('costBarValue');
+  const tokEl = document.getElementById('costBarTokens');
+
+  bar.hidden = false;
+  valEl.textContent = '$' + _sessionCostUsd.toFixed(6);
+  tokEl.textContent = `↑${_sessionInputTokens.toLocaleString()} ↓${_sessionOutputTokens.toLocaleString()}`;
+}
+
+function resetCostDisplay() {
+  _sessionCostUsd = 0;
+  _sessionInputTokens = 0;
+  _sessionOutputTokens = 0;
+  document.getElementById('costBar').hidden = true;
+  document.getElementById('costBarValue').textContent = '$0.000000';
+  document.getElementById('costBarTokens').textContent = '';
+}
+
+// ---------------------------------------------------------------------------
+// Config 編集
+// ---------------------------------------------------------------------------
+
+// 設定フィールド定義: [section, key, label, type, options?]
+const _CONFIG_FIELDS = [
+  { section: null,         key: 'language',           label: 'web.cfg_language',              type: 'select', options: ['ja','en','ko','zh'] },
+  { section: 'llm',        key: 'provider',            label: 'web.cfg_llm_provider',          type: 'select', options: ['claude','openai','azure_openai','gemini','ollama'] },
+  { section: 'llm',        key: 'model',               label: 'web.cfg_llm_model',             type: 'text' },
+  { section: 'screenshot', key: 'max_width',           label: 'web.cfg_screenshot_max_width',  type: 'number' },
+  { section: 'screenshot', key: 'max_height',          label: 'web.cfg_screenshot_max_height', type: 'number' },
+  { section: 'screenshot', key: 'quality',             label: 'web.cfg_screenshot_quality',    type: 'number' },
+  { section: 'screenshot', key: 'format',              label: 'web.cfg_screenshot_format',     type: 'select', options: ['webp','png','jpeg'] },
+  { section: 'screenshot', key: 'diff_threshold',      label: 'web.cfg_screenshot_diff',       type: 'number', step: '0.01' },
+  { section: 'screenshot', key: 'capture_delay_ms',    label: 'web.cfg_screenshot_delay',      type: 'number' },
+  { section: 'agent',      key: 'loop_timeout',        label: 'web.cfg_agent_loop_timeout',    type: 'number' },
+  { section: 'agent',      key: 'cmd_timeout',         label: 'web.cfg_agent_cmd_timeout',     type: 'number' },
+  { section: 'agent',      key: 'cmd_max_output',      label: 'web.cfg_agent_cmd_max_output',  type: 'number' },
+  { section: 'agent',      key: 'confirm_before_act',  label: 'web.cfg_agent_confirm',         type: 'checkbox' },
+  { section: 'agent',      key: 'web_fetch_enabled',   label: 'web.cfg_agent_web_fetch',       type: 'checkbox' },
+  { section: 'agent',      key: 'web_fetch_max_chars', label: 'web.cfg_agent_web_fetch_chars', type: 'number' },
+  { section: 'web',        key: 'context_history',     label: 'web.cfg_web_context_history',   type: 'number' },
+  { section: 'web',        key: 'session_expire_hours',label: 'web.cfg_web_session_expire',    type: 'number' },
+];
+
+const _CONFIG_SECTIONS_ORDER = [null, 'llm', 'screenshot', 'agent', 'web'];
+const _CONFIG_SECTION_LABELS = {
+  null:         'web.cfg_section_general',
+  llm:          'web.cfg_section_llm',
+  screenshot:   'web.cfg_section_screenshot',
+  agent:        'web.cfg_section_agent',
+  web:          'web.cfg_section_web',
+};
+
+async function openEditConfig() {
+  const modal = document.getElementById('editConfigModal');
+  modal.classList.add('is-visible');
+  const body = document.getElementById('editConfigBody');
+  body.innerHTML = '<p class="config-loading">Loading...</p>';
+
+  try {
+    const res = await fetch('/api/config');
+    if (!res.ok) return;
+    const cfg = await res.json();
+    _renderConfigForm(body, cfg);
+  } catch (e) {
+    console.error('Failed to load config', e);
+    body.innerHTML = '';
+  }
+}
+
+function _renderConfigForm(container, cfg) {
+  container.innerHTML = '';
+
+  let currentSection = '__none__';
+  for (const f of _CONFIG_FIELDS) {
+    if (f.section !== currentSection) {
+      currentSection = f.section;
+      const sectionKey = _CONFIG_SECTION_LABELS[f.section];
+      const heading = document.createElement('div');
+      heading.className = 'config-section-heading';
+      heading.textContent = t(sectionKey) || f.section || 'General';
+      container.appendChild(heading);
+    }
+
+    const row = document.createElement('div');
+    row.className = 'config-field-row';
+
+    const label = document.createElement('label');
+    label.className = 'config-field-label';
+    label.textContent = t(f.label) || f.key;
+    label.htmlFor = `cfg_${f.section}_${f.key}`;
+
+    let value = f.section ? (cfg[f.section] || {})[f.key] : cfg[f.key];
+    if (value === undefined) value = '';
+
+    let input;
+    if (f.type === 'checkbox') {
+      input = document.createElement('input');
+      input.type = 'checkbox';
+      input.className = 'config-field-checkbox';
+      input.checked = !!value;
+    } else if (f.type === 'select') {
+      input = document.createElement('select');
+      input.className = 'config-field-select';
+      for (const opt of f.options) {
+        const o = document.createElement('option');
+        o.value = opt;
+        o.textContent = opt;
+        if (String(value) === opt) o.selected = true;
+        input.appendChild(o);
+      }
+    } else {
+      input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'config-field-input';
+      input.value = value;
+      if (f.step) input.step = f.step;
+      if (f.type === 'text') { input.type = 'text'; }
+    }
+    input.id = `cfg_${f.section}_${f.key}`;
+    input.dataset.section = f.section || '';
+    input.dataset.key = f.key;
+    input.dataset.ftype = f.type;
+
+    row.appendChild(label);
+    row.appendChild(input);
+    container.appendChild(row);
+  }
+}
+
+function _collectConfigValues() {
+  const body = document.getElementById('editConfigBody');
+  const inputs = body.querySelectorAll('[data-key]');
+  const result = {};
+  for (const inp of inputs) {
+    const section = inp.dataset.section;
+    const key = inp.dataset.key;
+    const ftype = inp.dataset.ftype;
+    let val;
+    if (ftype === 'checkbox') {
+      val = inp.checked;
+    } else if (ftype === 'number') {
+      val = parseFloat(inp.value);
+    } else {
+      val = inp.value;
+    }
+    if (section) {
+      if (!result[section]) result[section] = {};
+      result[section][key] = val;
+    } else {
+      result[key] = val;
+    }
+  }
+  return result;
+}
+
+function closeEditConfig() {
+  document.getElementById('editConfigModal').classList.remove('is-visible');
+}
+
+async function saveConfig() {
+  const data = _collectConfigValues();
+  try {
+    const res = await fetch('/api/config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      await showAlert('Failed to save config');
+      return;
+    }
+    const noteEl = document.getElementById('configSaveNote');
+    noteEl.textContent = t('web.edit_config_saved') || 'Saved. LLM changes require restart.';
+    setTimeout(() => { noteEl.textContent = ''; }, 4000);
+  } catch (e) {
+    console.error('Failed to save config', e);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // OPERANT.md 編集
 // ---------------------------------------------------------------------------
 async function openEditRules() {
@@ -667,6 +876,10 @@ document.getElementById('editRulesBtn').addEventListener('click', openEditRules)
 document.getElementById('closeEditRulesBtn').addEventListener('click', closeEditRules);
 document.getElementById('editRulesBackdrop').addEventListener('click', closeEditRules);
 document.getElementById('saveRulesBtn').addEventListener('click', saveRules);
+document.getElementById('editConfigBtn').addEventListener('click', openEditConfig);
+document.getElementById('closeEditConfigBtn').addEventListener('click', closeEditConfig);
+document.getElementById('editConfigBackdrop').addEventListener('click', closeEditConfig);
+document.getElementById('saveConfigBtn').addEventListener('click', saveConfig);
 document.getElementById('downloadScreenshotBtn').addEventListener('click', downloadScreenshot);
 
 // ダイアログ

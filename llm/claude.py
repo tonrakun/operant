@@ -81,10 +81,14 @@ class ClaudeLLM(BaseLLM):
         def _call() -> str:
             resp = self._client.messages.create(
                 model=self.model,
-                max_tokens=self.max_tokens,
+                max_tokens=2048,
                 system=system_blocks,
                 messages=api_messages,
             )
+            self.last_usage = {
+                "input_tokens": resp.usage.input_tokens if resp.usage else 0,
+                "output_tokens": resp.usage.output_tokens if resp.usage else 0,
+            }
             raw = resp.content[0].text if resp.content else ""
             if not raw.startswith("THINK:") and not raw.startswith("DONE:") and not raw.startswith("ACT:"):
                 raw = "THINK: " + raw

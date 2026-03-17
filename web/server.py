@@ -21,6 +21,24 @@ logger = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).parent / "static"
 CHATS_DIR = Path(__file__).parent.parent / "chats"
+CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
+
+# config.yaml で編集を許可するキーと型
+_CONFIG_SAFE_KEYS: dict[str, type] = {
+    "language": str,
+}
+_CONFIG_SAFE_SECTIONS: dict[str, dict[str, type]] = {
+    "llm": {"provider": str, "model": str},
+    "screenshot": {
+        "max_width": int, "max_height": int, "quality": int,
+        "format": str, "diff_threshold": float, "capture_delay_ms": int,
+    },
+    "agent": {
+        "loop_timeout": int, "cmd_timeout": int, "cmd_max_output": int,
+        "confirm_before_act": bool, "web_fetch_enabled": bool, "web_fetch_max_chars": int,
+    },
+    "web": {"session_expire_hours": int, "context_history": int},
+}
 
 # インメモリセッション: {token: expires_at (datetime)}
 _sessions: dict[str, datetime] = {}
@@ -102,6 +120,10 @@ def create_app(config: dict[str, Any]) -> FastAPI:
         if not _verify_session(session):
             raise HTTPException(status_code=401)
         _chat_history.clear()
+        # セッションコストもリセット
+        agent._session_input_tokens = 0
+        agent._session_output_tokens = 0
+        agent._session_cost_usd = 0.0
         return JSONResponse({"ok": True})
 
     # ---------------------------------------------------------------------------
@@ -218,6 +240,87 @@ def create_app(config: dict[str, Any]) -> FastAPI:
         content: str = body.get("content", "")
         _OPERANT_PATH.write_text(content, encoding="utf-8")
         logger.info("OPERANT.md updated via web panel")
+        return JSONResponse({"ok": True})
+
+    # ---------------------------------------------------------------------------
+    # Config API
+    # ---------------------------------------------------------------------------
+
+    def _safe_config_subset(cfg: dict[str, Any]) -> dict[str, Any]:
+        """安全なconfig項目のみ返す（APIキー・パスワードを除外）"""
+        result: dict[str, Any] = {}
+        for key, typ in _CONFIG_SAFE_KEYS.items():
+            if key in cfg:
+                result[key] = cfg[key]
+        for section, fields in _CONFIG_SAFE_SECTIONS.items():
+            if section in cfg:
+                result[section] = {k: cfg[section][k] for k in fields if k in cfg[section]}
+        return result
+
+    @app.get("/api/config")
+    async def get_config(session: str | None = Cookie(default=None)) -> JSONResponse:
+        if not _verify_session(session):
+            raise HTTPException(status_code=401)
+        # ファイルから最新を読む
+        if CONFIG_PATH.exists():
+            with open(CONFIG_PATH, encoding="utf-8") as f:
+                cfg = yaml.safe_load(f) or {}
+        else:
+            cfg = config
+        return JSONResponse(_safe_config_subset(cfg))
+
+    @app.post("/api/config")
+    async def save_config(
+        request: Request,
+        session: str | None = Cookie(default=None),
+    ) -> JSONResponse:
+        if not _verify_session(session):
+            raise HTTPException(status_code=401)
+        body = await request.json()
+
+        # ディスクの現在のconfigを読み込む
+        if CONFIG_PATH.exists():
+            with open(CONFIG_PATH, encoding="utf-8") as f:
+                cfg = yaml.safe_load(f) or {}
+        else:
+            cfg = {}
+
+        # 安全なキーのみ上書き
+        for key, typ in _CONFIG_SAFE_KEYS.items():
+            if key in body:
+                try:
+                    cfg[key] = typ(body[key])
+                except (ValueError, TypeError):
+                    pass
+
+        for section, fields in _CONFIG_SAFE_SECTIONS.items():
+            if section in body and isinstance(body[section], dict):
+                if section not in cfg:
+                    cfg[section] = {}
+                for k, typ in fields.items():
+                    if k in body[section]:
+                        val = body[section][k]
+                        try:
+                            if typ is bool:
+                                cfg[section][k] = bool(val)
+                            else:
+                                cfg[section][k] = typ(val)
+                        except (ValueError, TypeError):
+                            pass
+
+        # 書き込み
+        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+            yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False)
+
+        # インメモリconfigも更新（エージェント設定は即反映）
+        for key in _CONFIG_SAFE_KEYS:
+            if key in cfg:
+                config[key] = cfg[key]
+        for section in _CONFIG_SAFE_SECTIONS:
+            if section in cfg:
+                config.setdefault(section, {}).update(cfg[section])
+
+        logger.info("config.yaml updated via web panel")
         return JSONResponse({"ok": True})
 
     # ---------------------------------------------------------------------------

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Operant</title>
-  <link rel="stylesheet" href="/static/style.css?v=5">
+  <link rel="stylesheet" href="/static/style.css?v=6">
 </head>
 <body>
   <header class="app-header">
@@ -15,9 +15,18 @@
     </div>
     <div class="header-right">
       <span id="wsStatusDot" class="ws-dot ws-dot--connecting" title="Connecting..."></span>
-      <button id="editRulesBtn" class="edit-rules-btn">Edit Rules</button>
-      <button id="stopBtn" class="stop-btn">Emergency Stop</button>
-      <button id="logoutBtn" class="logout-btn">Logout</button>
+      <button id="editConfigBtn" class="icon-btn config-icon-btn" title="Config">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="15" height="15"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.892 3.433-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.892-1.64-.901-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.47l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>
+      </button>
+      <button id="editRulesBtn" class="icon-btn rules-icon-btn" title="Edit Rules">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="15" height="15"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg>
+      </button>
+      <button id="stopBtn" class="icon-btn stop-icon-btn" title="Emergency Stop">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="15" height="15"><path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z"/></svg>
+      </button>
+      <button id="logoutBtn" class="icon-btn logout-icon-btn" title="Logout">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/><path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/></svg>
+      </button>
     </div>
   </header>
 
@@ -35,7 +44,9 @@
         <p id="noScreenshot" class="no-screenshot">No screenshot yet</p>
         <div class="screenshot-toolbar" id="screenshotToolbar" hidden>
           <span id="screenshotTimestamp" class="screenshot-timestamp"></span>
-          <button id="downloadScreenshotBtn" class="screenshot-download-btn" title="Download">↓</button>
+          <button id="downloadScreenshotBtn" class="screenshot-download-btn" title="Download">
+            <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/></svg>
+          </button>
         </div>
       </div>
 
@@ -51,10 +62,21 @@
       <div class="chat-header">
         <span id="chatHeaderTitle" class="chat-header-title">Chat</span>
         <div class="chat-header-actions">
-          <button id="saveChatBtn" class="chat-action-btn">Save</button>
-          <button id="savedChatsBtn" class="chat-action-btn">Saved Chats</button>
-          <button id="clearHistoryBtn" class="clear-history-btn">Clear</button>
+          <button id="saveChatBtn" class="icon-btn chat-icon-btn" title="Save Chat">
+            <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M2 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H9.5a1 1 0 0 0-1 1v7.293l2.646-2.647a.5.5 0 0 1 .708.708l-3.5 3.5a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L7.5 9.293V2a2 2 0 0 1 2-2H14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h2.5a.5.5 0 0 1 0 1z"/></svg>
+          </button>
+          <button id="savedChatsBtn" class="icon-btn chat-icon-btn" title="Saved Chats">
+            <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.825a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31L.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3zm-8.322.12C1.72 3.042 1.95 3 2.19 3h5.396l-.707-.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006.139z"/></svg>
+          </button>
+          <button id="clearHistoryBtn" class="icon-btn chat-icon-btn" title="Clear History">
+            <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+          </button>
         </div>
+      </div>
+      <div id="costBar" class="cost-bar" hidden>
+        <span id="costBarLabel" class="cost-bar-label">Cost</span>
+        <span id="costBarValue" class="cost-bar-value">$0.000000</span>
+        <span id="costBarTokens" class="cost-bar-tokens"></span>
       </div>
       <div id="chatMessages" class="chat-messages"></div>
       <div class="chat-input-area">
@@ -64,7 +86,9 @@
           placeholder="Enter your task..."
           rows="3"
         ></textarea>
-        <button id="sendBtn" class="send-btn">Send</button>
+        <button id="sendBtn" class="send-btn" title="Send (Ctrl+Enter)">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16"><path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11z"/></svg>
+        </button>
       </div>
     </section>
   </main>
@@ -93,6 +117,22 @@
     </div>
   </div>
 
+  <!-- Config 編集モーダル -->
+  <div id="editConfigModal" class="modal">
+    <div class="modal-backdrop" id="editConfigBackdrop"></div>
+    <div class="edit-config-panel">
+      <div class="edit-rules-header">
+        <span id="editConfigPanelTitle" class="edit-rules-title">Config</span>
+        <button id="closeEditConfigBtn" class="saved-chats-close-btn">✕</button>
+      </div>
+      <div class="edit-config-body" id="editConfigBody"></div>
+      <div class="edit-rules-actions">
+        <span id="configSaveNote" class="config-save-note"></span>
+        <button id="saveConfigBtn" class="edit-rules-save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- OPERANT.md 編集モーダル -->
   <div id="editRulesModal" class="modal">
     <div class="modal-backdrop" id="editRulesBackdrop"></div>
@@ -113,6 +153,6 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=5" defer></script>
+  <script src="/static/app.js?v=6" defer></script>
 </body>
 </html>

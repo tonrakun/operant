@@ -35,9 +35,13 @@ class OpenAILLM(BaseLLM):
         def _call() -> str:
             resp = self._client.chat.completions.create(
                 model=self.model,
-                max_tokens=self.max_tokens,
                 messages=api_messages,
             )
+            if resp.usage:
+                self.last_usage = {
+                    "input_tokens": resp.usage.prompt_tokens,
+                    "output_tokens": resp.usage.completion_tokens,
+                }
             return resp.choices[0].message.content or ""
 
         return await asyncio.to_thread(_call)
@@ -71,9 +75,13 @@ class AzureOpenAILLM(BaseLLM):
         def _call() -> str:
             resp = self._client.chat.completions.create(
                 model=self._deployment,
-                max_tokens=self.max_tokens,
                 messages=api_messages,
             )
+            if resp.usage:
+                self.last_usage = {
+                    "input_tokens": resp.usage.prompt_tokens,
+                    "output_tokens": resp.usage.completion_tokens,
+                }
             return resp.choices[0].message.content or ""
 
         return await asyncio.to_thread(_call)

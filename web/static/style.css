@@ -29,6 +29,7 @@
   --border:        rgba(255, 255, 255, 0.06);
   --border-light:  rgba(255, 255, 255, 0.11);
   --think-bg:      rgba(74, 158, 255, 0.07);
+  --reply-bg:      rgba(74, 158, 255, 0.12);
   --done-bg:       rgba(111, 207, 151, 0.07);
   --error-bg:      rgba(233, 69, 96, 0.10);
   --user-bg:       rgba(124, 106, 247, 0.13);
@@ -601,6 +602,12 @@ body:not(.login-body) {
   border-left: 2px solid var(--blue);
 }
 
+.chat-msg--reply {
+  background: var(--reply-bg);
+  border-color: rgba(74, 158, 255, 0.18);
+  border-left: 2px solid var(--blue);
+}
+
 .chat-msg--done {
   background: var(--done-bg);
   border-color: rgba(111, 207, 151, 0.12);
@@ -783,35 +790,30 @@ body:not(.login-body) {
 }
 
 .send-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--accent);
   border: none;
   border-radius: var(--radius);
   color: #fff;
   cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 700;
-  padding: 0.5rem 1.1rem;
-  letter-spacing: 0.3px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  flex-shrink: 0;
   transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
   align-self: flex-end;
-  white-space: nowrap;
 }
 
 .send-btn:hover:not(:disabled) {
   background: var(--accent-dim);
   transform: translateY(-1px);
-  box-shadow: 0 5px 14px var(--accent-glow);
+  box-shadow: 0 4px 14px var(--accent-glow);
 }
 
-.send-btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: none;
-}
-
-.send-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
+.send-btn:active:not(:disabled) { transform: translateY(0); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ---------------------------------------------------------------------------
    Custom Dialog
@@ -1109,6 +1111,176 @@ body:not(.login-body) {
 .edit-rules-save-btn:hover {
   background: #6a59d6;
   transform: translateY(-1px);
+}
+
+/* ---------------------------------------------------------------------------
+   Icon Buttons
+--------------------------------------------------------------------------- */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.icon-btn:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.2);
+  transform: translateY(-1px);
+}
+
+.icon-btn:active {
+  transform: translateY(0);
+}
+
+.config-icon-btn  { color: var(--purple); border-color: rgba(124,106,247,0.3); }
+.config-icon-btn:hover { color: #a698ff; border-color: rgba(124,106,247,0.6); background: var(--purple-dim); }
+
+.rules-icon-btn   { color: var(--purple); border-color: rgba(124,106,247,0.3); }
+.rules-icon-btn:hover { color: #a698ff; border-color: rgba(124,106,247,0.6); background: var(--purple-dim); }
+
+.stop-icon-btn    { color: var(--accent); border-color: rgba(233,69,96,0.35); }
+.stop-icon-btn:hover { color: #ff6b84; border-color: rgba(233,69,96,0.65); background: var(--accent-glow); }
+
+.logout-icon-btn  { color: var(--text-dim); }
+.logout-icon-btn:hover { color: var(--text); }
+
+.chat-icon-btn    { color: var(--text-dim); width: 28px; height: 28px; }
+.chat-icon-btn:hover { color: var(--text); }
+
+/* ---------------------------------------------------------------------------
+   Cost Bar
+--------------------------------------------------------------------------- */
+.cost-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.85rem;
+  background: rgba(74, 158, 255, 0.05);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+.cost-bar-label {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cost-bar-value {
+  color: var(--blue);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.cost-bar-tokens {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-left: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   Config Modal
+--------------------------------------------------------------------------- */
+.edit-config-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  width: 520px;
+  max-width: 95vw;
+  max-height: 85vh;
+  overflow: hidden;
+  animation: fadeUp 0.2s ease-out;
+  position: relative;
+  z-index: 1001;
+}
+
+.edit-config-body {
+  padding: 0.75rem 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.config-section-heading {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin: 1rem 0 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.config-section-heading:first-child {
+  margin-top: 0;
+}
+
+.config-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.3rem 0;
+}
+
+.config-field-label {
+  font-size: 0.83rem;
+  color: var(--text-dim);
+  flex: 1;
+  min-width: 0;
+}
+
+.config-field-input,
+.config-field-select {
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.83rem;
+  padding: 0.3rem 0.65rem;
+  width: 160px;
+  flex-shrink: 0;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.config-field-input:focus,
+.config-field-select:focus {
+  border-color: rgba(124, 106, 247, 0.5);
+}
+
+.config-field-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--purple);
+  flex-shrink: 0;
+}
+
+.config-save-note {
+  font-size: 0.75rem;
+  color: var(--green);
+  flex: 1;
+}
+
+.config-loading {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 1rem 0;
+  text-align: center;
 }
 
 /* ---------------------------------------------------------------------------
