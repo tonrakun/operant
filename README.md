@@ -2,7 +2,7 @@
 
 > LLMがスクリーンショットを見ながら Windows を自律操作するローカルエージェント
 
-**バージョン:** 0.4.0 | **ライセンス:** MIT | **対応OS:** Windows 10 / 11
+**バージョン:** 1.0.0 | **ライセンス:** MIT | **対応OS:** Windows 10 / 11
 
 ---
 
@@ -160,23 +160,29 @@
 
 ## インストール
 
-### 1. リポジトリのクローン
+### 方法 1: install.bat（推奨）
 
-```bash
-git clone https://github.com/yourname/operant.git
-cd operant
+1. リポジトリをダウンロード（ZIP または `git clone`）
+2. フォルダ内の **`install.bat`** をダブルクリック
+
+```
+install.bat が自動で行うこと:
+  - Python 3.11 以上の確認（なければダウンロードページへ誘導）
+  - 仮想環境（.venv）の作成
+  - 依存パッケージのインストール
+  - セットアップウィザードの起動
 ```
 
-### 2. 仮想環境の作成（推奨）
+> **Python が未インストールの場合:** https://www.python.org/downloads/ からインストールし、
+> 「Add Python to PATH」にチェックを入れてください。
+
+### 方法 2: 手動インストール
 
 ```bash
+git clone https://github.com/tonrakun/operant.git
+cd operant
 python -m venv .venv
 .venv\Scripts\activate
-```
-
-### 3. 依存パッケージのインストール
-
-```bash
 pip install -r requirements.txt
 ```
 
@@ -237,6 +243,8 @@ Welcome to Operant Setup!
 
 ```bash
 python main.py --setup
+# または
+start.bat  # config.yaml がなければ自動でウィザードを起動
 ```
 
 ---
@@ -245,11 +253,14 @@ python main.py --setup
 
 ### 起動
 
+**`start.bat`** をダブルクリックするだけで起動します。起動後は自動でブラウザが開きます。
+
 ```bash
+# コマンドラインから起動する場合
 python main.py
 ```
 
-起動後、ブラウザで以下にアクセスします（同一 PC から）：
+ブラウザが自動で開かない場合は手動でアクセスしてください（同一 PC から）：
 
 ```
 http://localhost:8765
@@ -556,6 +567,8 @@ operant/
 │   ├── zh.yaml          # 中国語（簡体）リソース
 │   └── ko.yaml          # 韓国語リソース
 ├── logs/                # 実行ログ（自動作成）
+├── install.bat          # ワンクリックインストーラー（Python確認・venv・pip install・セットアップ）
+├── start.bat            # ワンクリック起動スクリプト
 ├── main.py              # エントリーポイント
 ├── setup.py             # CLIセットアップウィザード
 ├── requirements.txt     # 依存パッケージ
@@ -725,18 +738,15 @@ logs/operant.log
 
 ---
 
-## 今後の予定
-
-- タスクのスケジューリング・自動実行
-- ブラウザ拡張機能との連携（DOM 直接取得）
-- 2段階 LLM（軽量モデルと高精度モデルの自動切り替え）
-- マルチモニター対応の改善
-
----
-
 ## 変更履歴
 
-### v0.4.0（latest）
+### v1.0.0（latest）
+
+- **ワンクリックインストーラー** — `install.bat` を追加。Python バージョン確認・仮想環境作成・pip install・セットアップウィザード起動をすべて自動化。Visual C++ Build Tools 不足時も案内メッセージを表示
+- **ワンクリック起動スクリプト** — `start.bat` を追加。仮想環境の有効化・サーバー起動を自動化。`config.yaml` が未作成の場合はセットアップウィザードへ誘導
+- **ブラウザ自動オープン** — サーバー起動後に自動でブラウザを開くように変更
+
+### v0.4.0
 
 - **LLM 出力フォーマット再設計** — `REPLY:` タグを追加し、テキスト回答とツール呼び出しを明確に分離。質問には即 `REPLY:` で回答し、ツールが必要な場合のみ `ACT:` を出力。`THINK:` は内部推論専用に
 - **ループ検出** — 同一アクションが 3 回連続した場合に自動停止。無限ループを防止

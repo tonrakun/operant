@@ -490,4 +490,11 @@ def run_server(config: dict[str, Any]) -> None:
         logger.info("  LAN      : http://%s:%d", lan_ip, port)
         logger.info("  (Windows Firewall may need to allow port %d)", port)
     logger.info("=" * 52)
+
+    # サーバー起動後にブラウザを自動オープン
+    import threading
+    import webbrowser
+    url = f"http://localhost:{port}"
+    threading.Timer(1.5, webbrowser.open, args=[url]).start()
+
     uvicorn.run(app, host=host, port=port, log_level="info")

@@ -68,7 +68,7 @@ def main() -> None:
         print("ERROR: config.yaml is empty or invalid. Run 'python main.py --setup'.")
         sys.exit(1)
 
-    logger.info("Starting Operant v0.4.0")
+    logger.info("Starting Operant v1.0.0")
 
     from web.server import run_server
     run_server(config)
